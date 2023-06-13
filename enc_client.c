@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serverAddress;
     char buffer[1000];
 
+    char ciphertext[500000];
     char completeMessage[500000];
     char ptChar[250000];
     char keyChar[250000];
@@ -296,22 +297,45 @@ int main(int argc, char *argv[]) {
         printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
 
-    printf("CLIENT SENT: %lu\n", charsWritten);
+    // printf("CLIENT SENT: %lu\n", charsWritten);
 
 
+    //////////////////////
+    //////////////////////
+    //  RECEIVE ENCRYPTED DATA         
+    //////////////////////
+    //////////////////////
 
-    
-    // // Get return message from server
-    // // Clear out the buffer again for reuse
-    // memset(buffer, '\0', sizeof(buffer));
-    // // Read data from the socket, leaving \0 at end
-    // charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
-    // if (charsRead < 0){
-    //     error("CLIENT: ERROR reading from socket");
-    // }
-    // printf("CLIENT: I received this from the server: \"%s\"\n", buffer);
+    // Get return message from server
+    // Clear out the buffer again for reuse
+    memset(ciphertext, '\0', sizeof(ciphertext));
+    charsRead = 0;
+    int temp = 0;
+    while(charsRead < completeMessageLen){
+        memset(buffer, '\0', sizeof(buffer));
+        temp = recv(socketFD, buffer, sizeof(buffer), 0);
+        strcat(ciphertext, buffer);
+
+        charsRead += temp;
+    }
+   
+    if (charsRead < 0){
+        error("CLIENT: ERROR reading from socket");
+    }
+
+    printf("%s\n", ciphertext);
 
     // Close the socket
     close(socketFD); 
     return 0;
 }
+
+
+
+
+
+
+
+
+
+

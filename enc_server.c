@@ -218,16 +218,32 @@ int main(int argc, char *argv[]){
 
 
                 }
-                
-                printf("ciphertext: %s\n", ciphertext);
 
 
-                // // Send a Success message back to the client
-                // charsRead = send(connectionSocket, 
-                //                 "This should be the encryption key soon!", 39, 0); 
-                // if (charsRead < 0){
-                //     error("ERROR writing to socket");
-                // }
+                //////////////////////
+                //////////////////////
+                //  SEND BACK ENCRYPTED DATA         
+                //////////////////////
+                //////////////////////
+                memset(buffer, '\0', sizeof(buffer));
+                int charsWritten = 0;
+                int charsSent = 0;
+
+                while(charsWritten < numCharsClient){
+
+                    charsSent = send(connectionSocket, ciphertext + charsWritten, 1000, 0);
+                    charsWritten = charsWritten + charsSent;
+                }
+
+                if (charsWritten < 0){
+                    error("CLIENT: ERROR writing to socket");
+                }
+
+                if (charsWritten <= strlen(buffer)){
+                    printf("CLIENT: WARNING: Not all data written to socket!\n");
+                }
+
+
 
                 close(connectionSocket); 
                 break;
