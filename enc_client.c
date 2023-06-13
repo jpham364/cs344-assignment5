@@ -279,12 +279,11 @@ int main(int argc, char *argv[]) {
     charsWritten = 0;
     int charsSent = 0;
    
-    // Adapted code from:
+    // Adapted code from Beej Guide:
     // https://beej.us/guide/bgnet/html/#setsockoptman
     while(charsWritten < completeMessageLen){
 
         charsSent = send(socketFD, completeMessage + charsWritten, 1000, 0);
-        
         charsWritten = charsWritten + charsSent;
         
     }
