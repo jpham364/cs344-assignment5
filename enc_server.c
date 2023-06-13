@@ -31,9 +31,11 @@ int main(int argc, char *argv[]){
     int connectionSocket, charsRead;
     char buffer[1000];
 
+    char ciphertext[500000];
     char completeMessage[500000];
     char ptChar[250000];
     char keyChar[250000];
+    
 
     struct sockaddr_in serverAddress, clientAddress;
     socklen_t sizeOfClientInfo = sizeof(clientAddress);
@@ -181,8 +183,45 @@ int main(int argc, char *argv[]){
                 //  ENCRYPT         
                 //////////////////////
                 //////////////////////
+                int i;
+                char ptInt;
+                char keyInt;
+                char cipherInt; 
+                memset(ciphertext, '\0', sizeof(ciphertext));
+                for (i = 0; i < strlen(ptChar); i++){
 
+                    if(ptChar[i] == 32){
+                        ptInt = 26;
+                    }
+                    else{
+                        ptInt = ptChar[i] - 65;
+                    }
+
+                    if(keyChar[i] == 32){
+                        keyInt = 26;
+                    }
+                    else{
+                        keyInt = keyChar[i] - 65;
+                    }
+                    
+
+                    cipherInt = (ptInt + keyInt) % 27;
+                    // https://www.educative.io/blog/concatenate-string-c
+                    // Concatenate using sprintf
+
+                    if(cipherInt == 26){
+                        sprintf(ciphertext, "%s%c", ciphertext, cipherInt);
+                    }
+                    else{
+                        sprintf(ciphertext, "%s%c", ciphertext,(cipherInt + 65));
+                    }
+
+
+                }
                 
+                printf("ciphertext: %s\n", ciphertext);
+
+
                 // // Send a Success message back to the client
                 // charsRead = send(connectionSocket, 
                 //                 "This should be the encryption key soon!", 39, 0); 
