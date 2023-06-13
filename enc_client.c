@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
     size_t GETbufferSize = 0;
     
     getline(&ptContents, &GETbufferSize, plaintext);
-    printf("%s\n", ptContents);
+   
 
     int ptLen = strlen(ptContents);
     printf("Length of PT: %d\n", ptLen);
@@ -84,7 +84,6 @@ int main(int argc, char *argv[]) {
     char *keyContents = NULL;
     GETbufferSize = 0;
     getline(&keyContents, &GETbufferSize, key);
-    printf("%s\n", keyContents);
     int keyLen = strlen(keyContents);
     printf("Length of Key: %d\n", keyLen);
     
@@ -141,15 +140,27 @@ int main(int argc, char *argv[]) {
         printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
 
-    // Get return message for error
+    // Get return message from server
+    // Clear out the buffer again for reuse
     memset(buffer, '\0', sizeof(buffer));
-    charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
-
-    if(strcmp(buffer, "NO") == 0){
-        fprintf(stderr, "Attempted port: %i\n", ntohs(serverAddress.sin_port));
-        fprintf(stderr, "CLIENT: Connected to wrong server (NOT ENC)\n", ntohs(serverAddress.sin_port));
-        exit(2);
+    // Read data from the socket, leaving \0 at end
+    charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
+    if (charsRead < 0){
+        error("CLIENT: ERROR reading from socket");
     }
+    printf("CLIENT: I received this from the SERVER: \"%s\"\n", buffer);
+
+    // // Get return message for error
+    // memset(buffer, '\0', sizeof(buffer));
+    // charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
+
+    
+    // printf("%s", buffer);
+    // if(strcmp(buffer, "NO") == 0){
+    //     fprintf(stderr, "Attempted port: %i\n", ntohs(serverAddress.sin_port));
+    //     fprintf(stderr, "CLIENT: Connected to wrong server (NOT ENC)\n", ntohs(serverAddress.sin_port));
+    //     exit(2);
+    // }
 
 
 

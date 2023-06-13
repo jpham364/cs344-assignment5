@@ -77,8 +77,32 @@ int main(int argc, char *argv[]){
         }
         printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
+
+        // test
+
+        // Send a Success message back to the client
+        // charsRead = send(connectionSocket, 
+        //                 "I am the server, and I got your message", 40, 0); 
+        // if (charsRead < 0){
+        //     error("ERROR writing to socket");
+        // }
+
         if (strcmp(buffer, "ENC") != 0){
-            charsRead = send(connectionSocket,  "NO", 2, 0); 
+            // charsRead = send(connectionSocket,  "NO", 2, 0); 
+            // Send a Success message back to the client
+            charsRead = send(connectionSocket, 
+                        "NO", 2, 0); 
+            if (charsRead < 0){
+                error("ERROR writing to socket");
+            }
+        }
+        else{
+            charsRead = send(connectionSocket, 
+                        "YES", 3, 0); 
+            if (charsRead < 0){
+                error("ERROR writing to socket");
+            }
+
         }
 
         
