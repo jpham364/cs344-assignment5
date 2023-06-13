@@ -54,12 +54,13 @@ int main(int argc, char *argv[]) {
         exit(0); 
     } 
 
-
     //////////////////////
     //////////////////////
     //  Checking for KEY > PT         
     //////////////////////
     //////////////////////
+
+
     // Check if key file is shorter than plaintext
     // Using Exploration: stdin, stdout, stderr & C I/O library
     // Using Exploration: Files
@@ -133,8 +134,6 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
 
-
-
     }while(ptCharCheck != 10);
 
 
@@ -143,7 +142,7 @@ int main(int argc, char *argv[]) {
 
     //////////////////////
     //////////////////////
-    //  CLIENT SOCKET         
+    //  CLIENT SOCKET/CONNECT         
     //////////////////////
     //////////////////////
     // Create a socket
@@ -219,30 +218,30 @@ int main(int argc, char *argv[]) {
     //////////////////////
     //////////////////////
 
-    // // First set up PT
-    // memset(ptChar, '\0', sizeof(ptChar));
-    // plaintext = fopen(argv[1], "r");
+    // First set up PT
+    memset(ptChar, '\0', sizeof(ptChar));
+    plaintext = fopen(argv[1], "r");
 
-    // fgets(ptChar, sizeof(ptChar), plaintext);
+    fgets(ptChar, sizeof(ptChar), plaintext);
 
-    // // Remove the trailing \n that fgets adds
-    // ptChar[strcspn(ptChar, "\n")] = '\0'; 
+    // Remove the trailing \n that fgets adds
+    ptChar[strcspn(ptChar, "\n")] = '\0'; 
     
     // printf("String: %s\n", ptChar);
 
-    // // Then, set up Key
-    // memset(keyChar, '\0', sizeof(keyChar));
-    // key = fopen(argv[2], "r");
+    // Then, set up Key
+    memset(keyChar, '\0', sizeof(keyChar));
+    key = fopen(argv[2], "r");
 
-    // fgets(keyChar, sizeof(keyChar), key);
-    // // Remove the trailing \n that fgets adds
-    // keyChar[strcspn(keyChar, "\n")] = '\0'; 
+    fgets(keyChar, sizeof(keyChar), key);
+    // Remove the trailing \n that fgets adds
+    keyChar[strcspn(keyChar, "\n")] = '\0'; 
     // printf("Key: %s\n", keyChar);
 
-    // // Finally, we concat using strcat
-    // strcat(completeMessage, ptChar);
-    // strcat(completeMessage, "-");
-    // strcat(completeMessage,keyChar);
+    // Finally, we concat using strcat
+    strcat(completeMessage, ptChar);
+    strcat(completeMessage, "-");
+    strcat(completeMessage,keyChar);
 
     // printf("Concat: ");
     // printf("%s\n", completeMessage);
@@ -257,7 +256,7 @@ int main(int argc, char *argv[]) {
     // prepare to send size of string
     // https://www.geeksforgeeks.org/what-is-the-best-way-in-c-to-convert-a-number-to-a-string/
     memset(buffer, '\0', sizeof(buffer));
-    sprintf(buffer, "%d", ptLen);
+    sprintf(buffer, "%d", strlen(completeMessage));
 
     charsWritten = send(socketFD, buffer, strlen(buffer), 0); 
 
@@ -268,6 +267,39 @@ int main(int argc, char *argv[]) {
     if (charsWritten < strlen(buffer)){
         printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
+
+
+    //////////////////////
+    //////////////////////
+    //  SENDING DATA   
+    //////////////////////
+    //////////////////////
+    int completeMessageLen = strlen(completeMessage);
+
+    charsWritten = 0;
+    int charsSent = 0;
+   
+    // Adapted code from:
+    // https://beej.us/guide/bgnet/html/#setsockoptman
+    while(charsWritten < completeMessageLen){
+
+        charsSent = send(socketFD, completeMessage + charsWritten, 1000, 0);
+        
+        charsWritten = charsWritten + charsSent;
+        
+    }
+
+    if (charsWritten < 0){
+        error("CLIENT: ERROR writing to socket");
+    }
+
+    if (charsWritten <= strlen(buffer)){
+        printf("CLIENT: WARNING: Not all data written to socket!\n");
+    }
+
+    printf("CLIENT SENT: %lu\n", charsWritten);
+
+
 
     
     // // Get return message from server
