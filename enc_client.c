@@ -9,6 +9,8 @@
 // For files
 #include <fcntl.h>
 
+
+
 // Error function used for reporting issues
 void error(const char *msg) { 
   perror(msg); 
@@ -41,13 +43,23 @@ int main(int argc, char *argv[]) {
     int socketFD, portNumber, charsWritten, charsRead;
     struct sockaddr_in serverAddress;
     char buffer[1000];
-    
+
+    char completeMessage[500000];
+    char ptChar[250000];
+    char keyChar[250000];
+
     // Check usage & args
     if (argc != 4) { 
         fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); 
         exit(0); 
     } 
 
+
+    //////////////////////
+    //////////////////////
+    //  Checking for KEY > PT         
+    //////////////////////
+    //////////////////////
     // Check if key file is shorter than plaintext
     // Using Exploration: stdin, stdout, stderr & C I/O library
     // Using Exploration: Files
@@ -70,7 +82,7 @@ int main(int argc, char *argv[]) {
    
 
     int ptLen = strlen(ptContents);
-    printf("Length of PT: %d\n", ptLen);
+    // printf("Length of PT: %d\n", ptLen);
 
     // This is for the key file
     FILE *key;
@@ -85,19 +97,55 @@ int main(int argc, char *argv[]) {
     GETbufferSize = 0;
     getline(&keyContents, &GETbufferSize, key);
     int keyLen = strlen(keyContents);
-    printf("Length of Key: %d\n", keyLen);
+    // printf("Length of Key: %d\n", keyLen);
+
+    if (keyLen < ptLen){
+        fprintf(stderr, "ERROR: Key (%d) is shorter than plaintext(%d) \n", keyLen, ptLen); 
+        exit(1);
+    }
     
 
 
+    //////////////////////
+    //////////////////////
+    // CHECK FOR BAD CHARACTERS         
+    //////////////////////
+    //////////////////////
+
+    plaintext = fopen(argv[1], "r");
+
+    char ptCharCheck;
+
+    do{
+        ptCharCheck = fgetc(plaintext);
+
+        if(ptCharCheck == 32){
+            continue;
+        }
+        else if(ptCharCheck > 64 && ptCharCheck < 91){
+            continue;
+        }
+        else if(ptCharCheck == 10){
+            continue;
+        }
+        else{
+            fprintf(stderr, "ERROR: Bad character(s) \n"); 
+            exit(1);
+        }
 
 
-    
+
+    }while(ptCharCheck != 10);
 
 
 
 
 
-
+    //////////////////////
+    //////////////////////
+    //  CLIENT SOCKET         
+    //////////////////////
+    //////////////////////
     // Create a socket
     socketFD = socket(AF_INET, SOCK_STREAM, 0); 
     if (socketFD < 0){
@@ -117,9 +165,16 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
+
+    //////////////////////
+    //////////////////////
+    //  CHECK FOR RIGHT SERVER    
+    //////////////////////
+    //////////////////////
+    
     // This first section verifies that the enc_client is connected to the correct enc_server
     // Get input message from user
-    printf("CLIENT: Sending ENC...\n");
+    // printf("CLIENT: Sending ENC...\n");
 
     // Clear out the buffer array
     memset(buffer, '\0', sizeof(buffer));
@@ -148,25 +203,73 @@ int main(int argc, char *argv[]) {
     if (charsRead < 0){
         error("CLIENT: ERROR reading from socket");
     }
-    printf("CLIENT: I received this from the SERVER: \"%s\"\n", buffer);
+    
+    // printf("%s\n", buffer);
 
-    // // Get return message for error
-    // memset(buffer, '\0', sizeof(buffer));
-    // charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
+    if(strcmp(buffer, "NO") == 0){
+        fprintf(stderr, "Attempted port: %i\n", ntohs(serverAddress.sin_port));
+        fprintf(stderr, "CLIENT: Connected to wrong server (NOT ENC)\n", ntohs(serverAddress.sin_port));
+        exit(2);
+    }
+
+
+    //////////////////////
+    //////////////////////
+    //  CONCATENATE PT AND KEY         
+    //////////////////////
+    //////////////////////
+
+    // // First set up PT
+    // memset(ptChar, '\0', sizeof(ptChar));
+    // plaintext = fopen(argv[1], "r");
+
+    // fgets(ptChar, sizeof(ptChar), plaintext);
+
+    // // Remove the trailing \n that fgets adds
+    // ptChar[strcspn(ptChar, "\n")] = '\0'; 
+    
+    // printf("String: %s\n", ptChar);
+
+    // // Then, set up Key
+    // memset(keyChar, '\0', sizeof(keyChar));
+    // key = fopen(argv[2], "r");
+
+    // fgets(keyChar, sizeof(keyChar), key);
+    // // Remove the trailing \n that fgets adds
+    // keyChar[strcspn(keyChar, "\n")] = '\0'; 
+    // printf("Key: %s\n", keyChar);
+
+    // // Finally, we concat using strcat
+    // strcat(completeMessage, ptChar);
+    // strcat(completeMessage, "-");
+    // strcat(completeMessage,keyChar);
+
+    // printf("Concat: ");
+    // printf("%s\n", completeMessage);
+
+
+    //////////////////////
+    //////////////////////
+    //  SENDING SIZE        
+    //////////////////////
+    //////////////////////
+
+    // prepare to send size of string
+    // https://www.geeksforgeeks.org/what-is-the-best-way-in-c-to-convert-a-number-to-a-string/
+    memset(buffer, '\0', sizeof(buffer));
+    sprintf(buffer, "%d", ptLen);
+
+    charsWritten = send(socketFD, buffer, strlen(buffer), 0); 
+
+    if (charsWritten < 0){
+        error("CLIENT: ERROR writing to socket");
+    }
+
+    if (charsWritten < strlen(buffer)){
+        printf("CLIENT: WARNING: Not all data written to socket!\n");
+    }
 
     
-    // printf("%s", buffer);
-    // if(strcmp(buffer, "NO") == 0){
-    //     fprintf(stderr, "Attempted port: %i\n", ntohs(serverAddress.sin_port));
-    //     fprintf(stderr, "CLIENT: Connected to wrong server (NOT ENC)\n", ntohs(serverAddress.sin_port));
-    //     exit(2);
-    // }
-
-
-
-    // Now we can handle files
-
-
     // // Get return message from server
     // // Clear out the buffer again for reuse
     // memset(buffer, '\0', sizeof(buffer));

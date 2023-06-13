@@ -30,6 +30,8 @@ int main(int argc, char *argv[]){
 
     int connectionSocket, charsRead;
     char buffer[1000];
+    char completeMessage[500000];
+
     struct sockaddr_in serverAddress, clientAddress;
     socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
@@ -67,6 +69,11 @@ int main(int argc, char *argv[]){
 
         printf("SERVER: Connected to client running at host %d port %d\n", ntohs(clientAddress.sin_addr.s_addr), ntohs(clientAddress.sin_port));
 
+        //////////////////////
+        //////////////////////
+        //  RECEIVING CLIENT CHECK        
+        //////////////////////
+        //////////////////////
         // Get the message from the client and display it
         memset(buffer, '\0', 1000);
         // Read the client's message from the socket
@@ -77,35 +84,38 @@ int main(int argc, char *argv[]){
         }
         printf("SERVER: I received this from the client: \"%s\"\n", buffer);
 
-
-        // test
-
-        // Send a Success message back to the client
-        // charsRead = send(connectionSocket, 
-        //                 "I am the server, and I got your message", 40, 0); 
-        // if (charsRead < 0){
-        //     error("ERROR writing to socket");
-        // }
-
         if (strcmp(buffer, "ENC") != 0){
             // charsRead = send(connectionSocket,  "NO", 2, 0); 
             // Send a Success message back to the client
-            charsRead = send(connectionSocket, 
-                        "NO", 2, 0); 
+            charsRead = send(connectionSocket, "NO", 2, 0); 
             if (charsRead < 0){
                 error("ERROR writing to socket");
             }
         }
         else{
-            charsRead = send(connectionSocket, 
-                        "YES", 3, 0); 
+            charsRead = send(connectionSocket, "YES", 3, 0); 
             if (charsRead < 0){
                 error("ERROR writing to socket");
             }
 
         }
 
-        
+        //////////////////////
+        //////////////////////
+        //  RECEIVING SIZE        
+        //////////////////////
+        //////////////////////
+         // Get the message from the client and display it
+        memset(buffer, '\0', 1000);
+        // Read the client's message from the socket
+        charsRead = recv(connectionSocket, buffer, 999, 0); 
+        if (charsRead < 0){
+            error("ERROR reading from socket");
+        }
+        printf("SERVER: I received this from the client: \"%s\"\n", buffer);
+
+        int numCharsClient = atoi(buffer);
+        printf("%d\n", numCharsClient);
 
         // // Send a Success message back to the client
         // charsRead = send(connectionSocket, 
