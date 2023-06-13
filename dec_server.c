@@ -13,105 +13,273 @@ void error(const char *msg) {
 } 
 
 // Set up the address struct for the server socket
-void setupAddressStruct(struct sockaddr_in* address, 
-                        int portNumber){
+void setupAddressStruct(struct sockaddr_in* address, int portNumber){
  
-  // Clear out the address struct
-  memset((char*) address, '\0', sizeof(*address)); 
+    // Clear out the address struct
+    memset((char*) address, '\0', sizeof(*address)); 
 
-  // The address should be network capable
-  address->sin_family = AF_INET;
-  // Store the port number
-  address->sin_port = htons(portNumber);
-  // Allow a client at any address to connect to this server
-  address->sin_addr.s_addr = INADDR_ANY;
+    // The address should be network capable
+    address->sin_family = AF_INET;
+    // Store the port number
+    address->sin_port = htons(portNumber);
+    // Allow a client at any address to connect to this server
+    address->sin_addr.s_addr = INADDR_ANY;
 }
 
 int main(int argc, char *argv[]){
-  int connectionSocket, charsRead;
-  char buffer[256];
-  struct sockaddr_in serverAddress, clientAddress;
-  socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
-  // Check usage & args
-  if (argc < 2) { 
-    fprintf(stderr,"USAGE: %s port\n", argv[0]); 
-    exit(1);
-  } 
-  
-  // Create the socket that will listen for connections
-  int listenSocket = socket(AF_INET, SOCK_STREAM, 0);
-  if (listenSocket < 0) {
-    error("ERROR opening socket");
-  }
+    int connectionSocket, charsRead;
+    char buffer[1000];
 
-  // Set up the address struct for the server socket
-  setupAddressStruct(&serverAddress, atoi(argv[1]));
+    char decodedtext[500000];
+    char completeMessage[500000];
+    char cipherChar[250000];
+    char keyChar[250000];
+    
 
-  // Associate the socket to the port
-  if (bind(listenSocket, 
-          (struct sockaddr *)&serverAddress, 
-          sizeof(serverAddress)) < 0){
-    error("ERROR on binding");
-  }
+    struct sockaddr_in serverAddress, clientAddress;
+    socklen_t sizeOfClientInfo = sizeof(clientAddress);
 
-  // Start listening for connetions. Allow up to 5 connections to queue up
-  listen(listenSocket, 5); 
-  
-  // Accept a connection, blocking if one is not available until one connects
-  while(1){
-    // Accept the connection request which creates a connection socket
-    connectionSocket = accept(listenSocket, 
-                (struct sockaddr *)&clientAddress, 
-                &sizeOfClientInfo); 
-    if (connectionSocket < 0){
-      error("ERROR on accept");
+    // Check usage & args
+    if (argc < 2) { 
+        fprintf(stderr,"USAGE: %s listening_port\n", argv[0]); 
+        exit(1);
+    } 
+    
+    // Create the socket that will listen for connections
+    int listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenSocket < 0) {
+        error("ERROR opening socket");
     }
 
-    printf("SERVER: Connected to client running at host %d port %d\n", 
-                          ntohs(clientAddress.sin_addr.s_addr),
-                          ntohs(clientAddress.sin_port));
+    // Set up the address struct for the server socket
+    setupAddressStruct(&serverAddress, atoi(argv[1]));
 
-    // Get the message from the client and display it
-    memset(buffer, '\0', 256);
-    // Read the client's message from the socket
-    charsRead = recv(connectionSocket, buffer, 255, 0); 
-    if (charsRead < 0){
-      error("ERROR reading from socket");
-    }
-    printf("SERVER: I received this from the client: \"%s\"\n", buffer);
-
-    // Send a Success message back to the client
-    charsRead = send(connectionSocket, 
-                    "I am the server, and I got your message", 39, 0); 
-    if (charsRead < 0){
-      error("ERROR writing to socket");
+    // Associate the socket to the port
+    if (bind(listenSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress)) < 0){
+        error("ERROR on binding");
     }
 
-     // Get the message from the client and display it
-    memset(buffer, '\0', 256);
-    // Read the client's message from the socket
-    charsRead = recv(connectionSocket, buffer, 255, 0); 
-    if (charsRead < 0){
-      error("ERROR reading from socket");
+    // Start listening for connetions. Allow up to 5 connections to queue up
+    listen(listenSocket, 5); 
+    printf("SERVER: listening...\n");
+    
+    // Accept a connection, blocking if one is not available until one connects
+    while(1){
+        // Accept the connection request which creates a connection socket
+        connectionSocket = accept(listenSocket, (struct sockaddr *)&clientAddress, &sizeOfClientInfo); 
+        if (connectionSocket < 0){
+            error("ERROR on accept");
+        }
+
+       
+
+        pid_t spawnpid = -5;
+        spawnpid = fork();
+        switch(spawnpid){
+            case -1:
+                perror("Hull Breach!");
+                exit(1);
+                break;
+            case 0: 
+                printf("SERVER: Connected to client running at host %d port %d\n", ntohs(clientAddress.sin_addr.s_addr), ntohs(clientAddress.sin_port));
+
+                //////////////////////
+                //////////////////////
+                //  RECEIVING CLIENT CHECK        
+                //////////////////////
+                //////////////////////
+                // Get the message from the client and display it
+                memset(buffer, '\0', 1000);
+                // Read the client's message from the socket
+                charsRead = recv(connectionSocket, buffer, 999, 0); 
+
+                if (charsRead < 0){
+                    error("ERROR reading from socket");
+                }
+                printf("SERVER: I received this from the client: \"%s\"\n", buffer);
+
+                if (strcmp(buffer, "DEC") != 0){
+                    // charsRead = send(connectionSocket,  "NO", 2, 0); 
+                    // Send a Success message back to the client
+                    charsRead = send(connectionSocket, "NO", 2, 0); 
+                    if (charsRead < 0){
+                        error("ERROR writing to socket");
+                    }
+                }
+                else{
+                    charsRead = send(connectionSocket, "YES", 3, 0); 
+                    if (charsRead < 0){
+                        error("ERROR writing to socket");
+                    }
+
+                }
+
+                ////////////////////
+                ////////////////////
+                //  RECEIVING SIZE        
+                ////////////////////
+                ////////////////////
+                // Get the message from the client and display it
+                memset(buffer, '\0', 1000);
+                // Read the client's message from the socket
+                charsRead = recv(connectionSocket, buffer, 999, 0); 
+                if (charsRead < 0){
+                    error("ERROR reading from socket");
+                }
+                
+
+                int numCharsClient = atoi(buffer);
+                printf("SERVER: %d\n", numCharsClient);
+
+
+                //////////////////////
+                //////////////////////
+                //  RECEIVING DATA        
+                //////////////////////
+                //////////////////////
+
+                memset(completeMessage, '\0', sizeof(completeMessage));
+                charsRead = 0;
+                int temp = 0;
+                while(charsRead < numCharsClient){
+                    memset(buffer, '\0', sizeof(buffer)); // clear buffer
+                    temp = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
+                    strcat(completeMessage, buffer);
+
+                    if (temp == -1){
+                        printf("temp == -1\n");
+                        break;
+                    }
+                    if (temp == 0){
+                        printf("temp == 0\n");
+                        break;
+                    }
+                
+                    charsRead += temp;
+                    
+                }      
+
+                printf("SERVER READ: %d\n", charsRead);
+                printf("%s\n", completeMessage);
+
+                //////////////////////
+                //////////////////////
+                //  SEPARATE DATA        
+                //////////////////////
+                //////////////////////
+
+                char *token;
+                char *saveptr;
+                
+                // Get plaintext
+                token = strtok_r(completeMessage, "-", &saveptr);
+
+                memset(cipherChar, '\0', sizeof(cipherChar));
+                strcpy(cipherChar, token);
+
+                printf("cipherChar: %s\n", cipherChar);
+
+                // Then get Token
+                token = strtok_r(NULL, "\0", &saveptr);
+                memset(keyChar, '\0', sizeof(keyChar));
+                strcpy(keyChar, token);
+
+                printf("keyChar: %s\n", keyChar);
+
+                // //////////////////////
+                // //////////////////////
+                // //  DECODE         
+                // //////////////////////
+                // //////////////////////
+                int i;
+                char cipherInt;
+                char keyInt;
+                int decodedInt; 
+                memset(decodedtext, '\0', sizeof(decodedtext));
+
+
+                for (i = 0; i < strlen(cipherChar); i++){
+
+                    if(cipherChar[i] == 32){
+                        cipherInt = 26;
+                    }
+                    else{
+                        cipherInt = cipherChar[i] - 65;
+                    }
+
+                    if(keyChar[i] == 32){
+                        keyInt = 26;
+                    }
+                    else{
+                        keyInt = keyChar[i] - 65;
+                    }
+                    
+
+
+                    decodedInt = (cipherInt - keyInt);
+
+                    if(decodedInt < 0){
+                        decodedInt += 27;
+                    }
+                    else{
+                        decodedInt = decodedInt % 27;
+                    }
+
+                   
+                    // https://www.educative.io/blog/concatenate-string-c
+                    // Concatenate using sprintf
+                    // printf("%d\n", decodedInt);
+                    // printf("Test: %d\n", testMod);
+
+                    if(decodedInt == 26){
+                        sprintf(decodedtext, "%s%c", decodedtext, decodedInt);
+                    }
+                    else{
+                        sprintf(decodedtext, "%s%c", decodedtext, (decodedInt + 65));
+                    }
+
+
+                }
+
+                printf("%s\n", decodedtext);
+
+                // //////////////////////
+                // //////////////////////
+                // //  SEND BACK DECODED DATA         
+                // //////////////////////
+                // //////////////////////
+                memset(buffer, '\0', sizeof(buffer));
+                int charsWritten = 0;
+                int charsSent = 0;
+
+                while(charsWritten < numCharsClient){
+
+                    charsSent = send(connectionSocket, decodedtext + charsWritten, 1000, 0);
+                    charsWritten = charsWritten + charsSent;
+                }
+
+                if (charsWritten < 0){
+                    error("CLIENT: ERROR writing to socket");
+                }
+
+                if (charsWritten <= strlen(buffer)){
+                    printf("CLIENT: WARNING: Not all data written to socket!\n");
+                }
+
+
+
+                close(connectionSocket); 
+                break;
+            default:
+                break;
+        }
+
+       
+        // // Close the connection socket for this client
+        close(connectionSocket); 
     }
-    printf("SERVER: I received this from the client: \"%s\"\n", buffer);
-
-    // Send a Success message back to the client
-    charsRead = send(connectionSocket, 
-                    "I am the server, and I got your message", 39, 0); 
-    if (charsRead < 0){
-      error("ERROR writing to socket");
-    }
-
-
-
-
-
-    // Close the connection socket for this client
-    close(connectionSocket); 
-  }
-  // Close the listening socket
-  close(listenSocket); 
-  return 0;
+    // Close the listening socket
+    close(listenSocket); 
+    return 0;
 }

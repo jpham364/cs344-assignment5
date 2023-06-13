@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     
-
+    // printf("CHECKED KEY < PT\n");
 
     //////////////////////
     //////////////////////
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]) {
 
     }while(ptCharCheck != 10);
 
-
+    // printf("CHECKED BAD CHARACTERS\n");
 
 
 
@@ -165,6 +165,7 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
+    // printf("CONNECTED TO SERVER\n");
 
     //////////////////////
     //////////////////////
@@ -197,6 +198,8 @@ int main(int argc, char *argv[]) {
 
     // Get return message from server
     // Clear out the buffer again for reuse
+    printf("RECIEVING SERVER CHECK...\n");
+
     memset(buffer, '\0', sizeof(buffer));
     // Read data from the socket, leaving \0 at end
     charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
@@ -212,6 +215,7 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
+    // printf("CHECKED FOR RIGHT SERVER\n");
 
     //////////////////////
     //////////////////////
@@ -247,6 +251,7 @@ int main(int argc, char *argv[]) {
     // printf("Concat: ");
     // printf("%s\n", completeMessage);
 
+    // printf("CONCATENATED PT AND KEY\n");
 
     //////////////////////
     //////////////////////
@@ -254,6 +259,7 @@ int main(int argc, char *argv[]) {
     //////////////////////
     //////////////////////
 
+    // printf("SENDING SIZE...\n");
     // prepare to send size of string
     // https://www.geeksforgeeks.org/what-is-the-best-way-in-c-to-convert-a-number-to-a-string/
     memset(buffer, '\0', sizeof(buffer));
@@ -269,12 +275,15 @@ int main(int argc, char *argv[]) {
         printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
 
+    // printf("SENT SIZE\n");
 
     //////////////////////
     //////////////////////
     //  SENDING DATA   
     //////////////////////
     //////////////////////
+
+    // printf("SENDING DATA...\n");
     int completeMessageLen = strlen(completeMessage);
 
     charsWritten = 0;
@@ -286,19 +295,24 @@ int main(int argc, char *argv[]) {
 
         charsSent = send(socketFD, completeMessage + charsWritten, 1000, 0);
         charsWritten = charsWritten + charsSent;
+
+        if (charsWritten == 0){
+            break;
+        }
+        if (charsWritten == -1){
+            break;
+        }
+
+        if (charsWritten <= strlen(buffer)){
+        printf("CLIENT: WARNING: Not all data written to socket!\n");
+        }
         
     }
 
-    if (charsWritten < 0){
-        error("CLIENT: ERROR writing to socket");
-    }
-
-    if (charsWritten <= strlen(buffer)){
-        printf("CLIENT: WARNING: Not all data written to socket!\n");
-    }
+    
 
     // printf("CLIENT SENT: %lu\n", charsWritten);
-
+    // printf("SENT DATA\n");
 
     //////////////////////
     //////////////////////
@@ -308,20 +322,30 @@ int main(int argc, char *argv[]) {
 
     // Get return message from server
     // Clear out the buffer again for reuse
+    // printf("RECIEVING ENCRYPTED DATA...\n");
+    
     memset(ciphertext, '\0', sizeof(ciphertext));
     charsRead = 0;
     int temp = 0;
-    while(charsRead < completeMessageLen){
+
+    do{
         memset(buffer, '\0', sizeof(buffer));
-        temp = recv(socketFD, buffer, sizeof(buffer), 0);
+        temp = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
         strcat(ciphertext, buffer);
 
+        if (temp == -1){ 
+            break;
+        }
+
+        if (temp == 0){
+            break;
+        }
+
         charsRead += temp;
-    }
+    }while(charsRead < completeMessageLen);
    
-    if (charsRead < 0){
-        error("CLIENT: ERROR reading from socket");
-    }
+
+    // printf("RECIEVED ENCRYPTED DATA\n");
 
     printf("%s\n", ciphertext);
 
