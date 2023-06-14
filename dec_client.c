@@ -1,3 +1,20 @@
+// CS344 - Operating Systems 
+// Assignment 5: dec_client.c
+// Jonathan Pham
+// 934256908
+// phamjon@oregonstate.edu
+
+// SOURCES: (includes posted client.c and server.c code)
+// Using Exploration: stdin, stdout, stderr & C I/O library
+// Using Exploration: Files
+// 2.4 Lecture: File Access in C
+// 4.2 Network Clients Lecture: Slide 18
+
+// https://man7.org/linux/man-pages/man3/fgetc.3.html
+// https://edstem.org/us/courses/37585/discussion/3201754?answer=7333443
+// https://man7.org/linux/man-pages/man3/fgets.3p.html
+// https://beej.us/guide/bgnet/html/#setsockoptman
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -42,49 +59,54 @@ int main(int argc, char *argv[]) {
 
     int socketFD, portNumber, charsWritten, charsRead;
     struct sockaddr_in serverAddress;
+
+    // This is for sending/reading in partial chunks
     char buffer[1000];
 
+    // completeMessage = ciphertext + key combined
+    // decodedtext = returned decodedtext from server
     char decodedtext[500000];
     char completeMessage[500000];
+
+    // cipherChar and keyChar are the separate strings passed in
     char cipherChar[250000];
     char keyChar[250000];
 
     // Check usage & args
     if (argc != 4) { 
-        fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); 
+        fprintf(stderr,"USAGE: %s ciphertext key port\n", argv[0]); 
         exit(0); 
     } 
 
     //////////////////////
     //////////////////////
-    //  Checking for KEY > PT         
+    //  Step 1: Checking for KEY < CT   
+    //  Check if key file is shorter than ciphertext      
     //////////////////////
     //////////////////////
 
-
-    // Check if key file is shorter than plaintext
+    
     // Using Exploration: stdin, stdout, stderr & C I/O library
-    // Using Exploration: Files
     // 2.4 Lecture: File Access in C
+    // We can use I/O funcitons in C Standard Library
     
-    // This is for the plaintext file
-    FILE *plaintext;
-    plaintext = fopen(argv[1], "r");
+    // This is for the ciphertext file
+    FILE *ciphertext;
+    ciphertext = fopen(argv[1], "r");
     
-    if(plaintext == NULL){
+    if(ciphertext == NULL){
         fprintf(stderr,"ERROR: Cannot open file\n"); 
         exit(1); 
     }
 
     // This will automatically allocate by getline() using malloc() (found in 2.4 slides)
-    char* ptContents = NULL;
+    char* cipherContents = NULL;
     size_t GETbufferSize = 0;
     
-    getline(&ptContents, &GETbufferSize, plaintext);
+    // store the length of ciphertext file
+    getline(&cipherContents, &GETbufferSize, ciphertext);
+    int cipherLen = strlen(cipherContents);
    
-
-    int ptLen = strlen(ptContents);
-    // printf("Length of PT: %d\n", ptLen);
 
     // This is for the key file
     FILE *key;
@@ -97,39 +119,58 @@ int main(int argc, char *argv[]) {
 
     char *keyContents = NULL;
     GETbufferSize = 0;
+
+    // store the length of the key file
     getline(&keyContents, &GETbufferSize, key);
     int keyLen = strlen(keyContents);
-    // printf("Length of Key: %d\n", keyLen);
-
-    if (keyLen < ptLen){
-        fprintf(stderr, "ERROR: Key (%d) is shorter than plaintext(%d) \n", keyLen, ptLen); 
+    
+    // Now, we can check if the key is shorter than ciphertext
+    // If so, exit 
+    if (keyLen < cipherLen){
+        fprintf(stderr, "ERROR: Key (%d) is shorter than ciphertext(%d) \n", keyLen, cipherLen); 
         exit(1);
     }
     
-    // printf("CHECKED KEY < PT\n");
+   
 
     //////////////////////
     //////////////////////
-    // CHECK FOR BAD CHARACTERS         
+    // Step 2: CHECK FOR BAD CHARACTERS         
     //////////////////////
     //////////////////////
 
-    plaintext = fopen(argv[1], "r");
+    ciphertext = fopen(argv[1], "r");
 
     char cipherCharCheck;
 
-    do{
-        cipherCharCheck = fgetc(plaintext);
+    // ASCII:
+    // Space = 32
+    // A = 65
+    // Z = 90
+    // \n = 10
 
+    // check ciphertext
+    do{
+        // https://man7.org/linux/man-pages/man3/fgetc.3.html
+        // Check character one-by-one
+        cipherCharCheck = fgetc(ciphertext);
+
+        // if it is a space
         if(cipherCharCheck == 32){
             continue;
         }
+
+        // between A to Z
         else if(cipherCharCheck > 64 && cipherCharCheck < 91){
             continue;
         }
+
+        // if newLine, will exit after current loop
         else if(cipherCharCheck == 10){
             continue;
         }
+
+        // else, its a bad character! exit
         else{
             fprintf(stderr, "ERROR: Bad character(s) \n"); 
             exit(1);
@@ -137,15 +178,46 @@ int main(int argc, char *argv[]) {
 
     }while(cipherCharCheck != 10);
 
-    // printf("CHECKED BAD CHARACTERS\n");
+    // check for key
+    key = fopen(argv[2], "r");
+
+    char keyCharCheck;
+
+    do{
+       
+        keyCharCheck = fgetc(key);
+
+        // if it is a space
+        if(keyCharCheck == 32){
+            continue;
+        }
+        // between A to Z
+        else if(keyCharCheck > 64 && keyCharCheck < 91){
+            continue;
+        }
+        // if newLine, will exit after current loop
+        else if(keyCharCheck == 10){
+            continue;
+        }
+
+        // else, its a bad character! exit
+        else{
+            fprintf(stderr, "ERROR: Bad character(s) \n"); 
+            exit(1);
+        }
+
+    }while(keyCharCheck != 10);
+    
 
 
 
     //////////////////////
     //////////////////////
-    //  CLIENT SOCKET/CONNECT         
+    //  Step 3: CLIENT SOCKET/CONNECT         
     //////////////////////
     //////////////////////
+
+    
     // Create a socket
     socketFD = socket(AF_INET, SOCK_STREAM, 0); 
     if (socketFD < 0){
@@ -165,27 +237,25 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
-    // printf("CONNECTED TO SERVER\n");
+    
 
     //////////////////////
     //////////////////////
-    //  CHECK FOR RIGHT SERVER    
+    //  Step 4: CHECK FOR RIGHT SERVER  
+    //  This first section verifies that the enc_client is connected to the correct enc_server  
     //////////////////////
     //////////////////////
     
-    // This first section verifies that the enc_client is connected to the correct enc_server
-    // Get input message from user
-    // printf("CLIENT: Sending ENC...\n");
-
+   
     // Clear out the buffer array
     memset(buffer, '\0', sizeof(buffer));
 
     // Uses https://edstem.org/us/courses/37585/discussion/3201754?answer=7333443
     // This logic allows the client to send a message to the server so it can check 
-    strcpy(buffer, "DEC");
+    
+    strcpy(buffer, "DEC"); // in this file, DEC is used for decoding
 
     // Send message to server
-    // Write to the server
     charsWritten = send(socketFD, buffer, strlen(buffer), 0); 
 
     if (charsWritten < 0){
@@ -198,52 +268,53 @@ int main(int argc, char *argv[]) {
 
     // Get return message from server
     // Clear out the buffer again for reuse
-    // printf("RECIEVING SERVER CHECK...\n");
-
     memset(buffer, '\0', sizeof(buffer));
+
     // Read data from the socket, leaving \0 at end
     charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
     if (charsRead < 0){
         error("CLIENT: ERROR reading from socket");
     }
     
-    // printf("%s\n", buffer);
-
+    
+    // We check if the returned buffer is a NO
+    // If NO, then exit (wrong server)
+    // Else, continue;
     if(strcmp(buffer, "NO") == 0){
         fprintf(stderr, "Attempted port: %i\n", ntohs(serverAddress.sin_port));
         fprintf(stderr, "CLIENT: Connected to wrong server (NOT ENC)\n", ntohs(serverAddress.sin_port));
         exit(2);
     }
 
-    // printf("CHECKED FOR RIGHT SERVER\n");
 
     //////////////////////
     //////////////////////
-    //  CONCATENATE PT AND KEY         
+    //  Step 5: CONCATENATE CT AND KEY         
     //////////////////////
     //////////////////////
 
-    // First set up PT
+    // First set up CT
     memset(cipherChar, '\0', sizeof(cipherChar));
-    plaintext = fopen(argv[1], "r");
+    ciphertext = fopen(argv[1], "r");
 
-    fgets(cipherChar, sizeof(cipherChar), plaintext);
+    // use fgets() to retrieve string from file
+    // https://man7.org/linux/man-pages/man3/fgets.3p.html
+    fgets(cipherChar, sizeof(cipherChar), ciphertext);
 
-    // Remove the trailing \n that fgets adds
+    // Remove the trailing \n that fgets adds (client.c)
     cipherChar[strcspn(cipherChar, "\n")] = '\0'; 
     
-    // printf("String: %s\n", cipherChar);
 
     // Then, set up Key
     memset(keyChar, '\0', sizeof(keyChar));
     key = fopen(argv[2], "r");
 
     fgets(keyChar, sizeof(keyChar), key);
-    // Remove the trailing \n that fgets adds
-    keyChar[strcspn(keyChar, "\n")] = '\0'; 
-    // printf("Key: %s\n", keyChar);
 
-    // Finally, we concat using strcat
+    keyChar[strcspn(keyChar, "\n")] = '\0'; 
+
+
+    // Finally, we concat CT and Key using strcat()
     strcat(completeMessage, cipherChar);
     strcat(completeMessage, "-");
     strcat(completeMessage,keyChar);
@@ -251,29 +322,40 @@ int main(int argc, char *argv[]) {
 
     //////////////////////
     //////////////////////
-    //  SENDING DATA   
+    //  Step 6: SENDING DATA   
     //////////////////////
     //////////////////////
 
-    // printf("SENDING DATA...\n");
+    // store length of entire concatenated string into int
     int completeMessageLen = strlen(completeMessage);
 
+
+    // Initialize: 
+    // charsWritten = Total
+    // charsSent = one loop
     charsWritten = 0;
     int charsSent = 0;
    
     // Adapted code from Beej Guide:
     // https://beej.us/guide/bgnet/html/#setsockoptman
+
+    // Keep doing while there is still more text left in completeMessageLen
     while(charsWritten < completeMessageLen){
 
+        // create a buffer variable inside the loop
         int theBuffer = sizeof(buffer);
 
+        // If there are less than 1000 chars to send, shorten the buffer 
         if((completeMessageLen - charsWritten) < 1000){
             theBuffer = (completeMessageLen - charsWritten) + 1;
         }
 
+
+        // Send a chunk of the message
+        // completeMessage + charsWritten will track where we are in the loop
         charsSent = send(socketFD, completeMessage + charsWritten, theBuffer, 0);
         
-
+        // Error handling from 4.2 Lecture sl. 18
         if (charsSent == 0){
             break;
         }
@@ -281,37 +363,41 @@ int main(int argc, char *argv[]) {
             break;
         }
 
-        
+        // Increase the total of charsWritten
         charsWritten = charsWritten + charsSent;
     }
 
+    // Error handle
     if (charsWritten <= strlen(buffer)){
         printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
 
     
+    //////////////////////
+    //////////////////////
+    //  Step 7: RECEIVE ENCRYPTED DATA  
+    //  Get return message from server       
+    //////////////////////
+    //////////////////////
 
-    // // printf("CLIENT SENT: %lu\n", charsWritten);
-    // printf("SENT DATA\n");
-
-    // //////////////////////
-    // //////////////////////
-    // //  RECEIVE ENCRYPTED DATA         
-    // //////////////////////
-    // //////////////////////
-
-    // // Get return message from server
-    // // Clear out the buffer again for reuse
-    // // printf("RECIEVING ENCRYPTED DATA...\n");
     
+    // Clear out the buffer again for reuse
     memset(decodedtext, '\0', sizeof(decodedtext));
     charsRead = 0;
 
+    // This entire chunk of text is taken from 4.2 Network Clients Lecture: Slide 18
     while(strstr(decodedtext, "@@") == NULL){
 
+        // clear buffer
         memset(buffer, '\0', sizeof(buffer));
+
+        // get next chunk
         charsRead = recv(socketFD, buffer, sizeof(buffer)-1, 0);
+
+        // add the chunk to total ciphertext
         strcat(decodedtext, buffer);
+
+        // Error handling
         if(charsRead == -1){
             break;
         }
@@ -321,11 +407,14 @@ int main(int argc, char *argv[]) {
 
     }
 
+    // Locate the terminal
     int terminalLocation = strstr(decodedtext, "@@") - decodedtext;
+
+    // Replace the terminal location with a null terminator
     decodedtext[terminalLocation] = '\0';
-    printf("%s\n", decodedtext);
-    fflush(stdout);
-    
+
+    // output it out!
+    printf("%s\n", decodedtext);    
 
     // Close the socket
     close(socketFD); 
@@ -334,8 +423,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-
-
-
-
