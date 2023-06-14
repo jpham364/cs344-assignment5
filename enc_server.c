@@ -115,7 +115,7 @@ int main(int argc, char *argv[]){
 
                 }
 
-                printf("CHECKED CLIENT\n");
+                // printf("CHECKED CLIENT\n");
                 ////////////////////
                 ////////////////////
                 //  RECEIVING SIZE        
@@ -130,10 +130,10 @@ int main(int argc, char *argv[]){
                 }
                 
 
-                int numCharsClient = atoi(buffer);
+                int numCharsClient = (atoi(buffer) + 1);
                 printf("SERVER: %d\n", numCharsClient);
 
-                printf("RECIEVED SIZE\n");
+                // printf("RECIEVED SIZE\n");
                 //////////////////////
                 //////////////////////
                 //  RECEIVING DATA        
@@ -144,27 +144,38 @@ int main(int argc, char *argv[]){
                 memset(completeMessage, '\0', sizeof(completeMessage));
                 charsRead = 0;
                 int temp = 0;
+
                 do{
                     memset(buffer, '\0', sizeof(buffer)); // clear buffer
-                    temp = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
-                    strcat(completeMessage, buffer);
+                    temp = recv(connectionSocket, buffer, sizeof(buffer) -1, 0);
 
+                    // if(buffer[temp] == '\0'){
+                    //     // printf("null terminated buffer!\n");
+                    // }
+                    // strcat(completeMessage, buffer);
+                    
                     if (temp == -1){
                         printf("temp == -1\n");
                         break;
                     }
                     if (temp == 0){
-                        printf("temp == 0\n");
+                    //     printf("temp == 0\n");
                         break;
                     }
-                
+
+                    sprintf(completeMessage, "%s%s", completeMessage, buffer);
                     charsRead += temp;
                     
                 }while(charsRead < numCharsClient);
 
+                // int x = 0;
+                // printf("CHAR INT\n");
+                // for (x = 0; x < 2600; x++)
+                // printf(" %c %d", completeMessage[x], completeMessage[x]);
+
                 // printf("SERVER READ: %d\n", charsRead);
-                printf("%s\n", completeMessage);
-                printf("RECIEVED DATA\n");
+                // printf("%s\n", completeMessage);
+                printf("RECEIVED DATA\n");
 
                 //////////////////////
                 //////////////////////
@@ -223,7 +234,7 @@ int main(int argc, char *argv[]){
                     // Concatenate using sprintf
 
                     if(cipherInt == 26){
-                        sprintf(ciphertext, "%s%c", ciphertext, cipherInt);
+                        sprintf(ciphertext, "%s%c", ciphertext, ' ');
                     }
                     else{
                         sprintf(ciphertext, "%s%c", ciphertext,(cipherInt + 65));

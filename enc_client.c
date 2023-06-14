@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
 
     // Get return message from server
     // Clear out the buffer again for reuse
-    printf("RECIEVING SERVER CHECK...\n");
+    // printf("RECIEVING SERVER CHECK...\n");
 
     memset(buffer, '\0', sizeof(buffer));
     // Read data from the socket, leaving \0 at end
@@ -293,20 +293,28 @@ int main(int argc, char *argv[]) {
     // https://beej.us/guide/bgnet/html/#setsockoptman
     while(charsWritten < completeMessageLen){
 
-        charsSent = send(socketFD, completeMessage + charsWritten, 1000, 0);
-        charsWritten = charsWritten + charsSent;
+        int theBuffer = sizeof(buffer);
 
-        if (charsWritten == 0){
-            break;
-        }
-        if (charsWritten == -1){
-            break;
+        if((completeMessageLen - charsWritten) < 1000){
+            theBuffer = (completeMessageLen - charsWritten) + 1;
         }
 
-        if (charsWritten <= strlen(buffer)){
-        printf("CLIENT: WARNING: Not all data written to socket!\n");
-        }
+        charsSent = send(socketFD, completeMessage + charsWritten, theBuffer, 0);
         
+
+        if (charsSent == 0){
+            break;
+        }
+        if (charsSent == -1){
+            break;
+        }
+
+        
+        charsWritten = charsWritten + charsSent;
+    }
+
+    if (charsWritten <= strlen(buffer)){
+        printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
 
     
@@ -346,18 +354,18 @@ int main(int argc, char *argv[]) {
    
 
     // printf("RECIEVED ENCRYPTED DATA\n");
+   
 
     printf("%s\n", ciphertext);
+    fflush(stdout);
 
     // Close the socket
     close(socketFD); 
+
+    
+
     return 0;
 }
-
-
-
-
-
 
 
 

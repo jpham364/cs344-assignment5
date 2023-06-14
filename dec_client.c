@@ -44,14 +44,15 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serverAddress;
     char buffer[1000];
 
-    char decodedtext[500000];
+    char decodedText[500000];
     char completeMessage[500000];
+
     char cipherChar[250000];
     char keyChar[250000];
 
     // Check usage & args
     if (argc != 4) { 
-        fprintf(stderr,"USAGE: %s ciphertext key port\n", argv[0]); 
+        fprintf(stderr,"USAGE: %s plaintext key port\n", argv[0]); 
         exit(0); 
     } 
 
@@ -62,12 +63,12 @@ int main(int argc, char *argv[]) {
     //////////////////////
 
 
-    // Check if key file is shorter than ciphertext
+    // Check if key file is shorter than plaintext
     // Using Exploration: stdin, stdout, stderr & C I/O library
     // Using Exploration: Files
     // 2.4 Lecture: File Access in C
     
-    // This is for the ciphertext file
+    // This is for the plaintext file
     FILE *ciphertext;
     ciphertext = fopen(argv[1], "r");
     
@@ -106,7 +107,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     
-
+ 
 
     //////////////////////
     //////////////////////
@@ -137,7 +138,7 @@ int main(int argc, char *argv[]) {
 
     }while(cipherCharCheck != 10);
 
-
+    // printf("CHECKED BAD CHARACTERS\n");
 
 
 
@@ -165,6 +166,7 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
+    // printf("CONNECTED TO SERVER\n");
 
     //////////////////////
     //////////////////////
@@ -197,6 +199,8 @@ int main(int argc, char *argv[]) {
 
     // Get return message from server
     // Clear out the buffer again for reuse
+    // printf("RECIEVING SERVER CHECK...\n");
+
     memset(buffer, '\0', sizeof(buffer));
     // Read data from the socket, leaving \0 at end
     charsRead = recv(socketFD, buffer, sizeof(buffer) - 1, 0); 
@@ -212,14 +216,15 @@ int main(int argc, char *argv[]) {
         exit(2);
     }
 
+    // printf("CHECKED FOR RIGHT SERVER\n");
 
     //////////////////////
     //////////////////////
-    //  CONCATENATE CIPHER AND KEY         
+    //  CONCATENATE PT AND KEY         
     //////////////////////
     //////////////////////
 
-    // First set up CIPHER
+    // First set up PT
     memset(cipherChar, '\0', sizeof(cipherChar));
     ciphertext = fopen(argv[1], "r");
 
@@ -247,6 +252,7 @@ int main(int argc, char *argv[]) {
     // printf("Concat: ");
     // printf("%s\n", completeMessage);
 
+    // printf("CONCATENATED PT AND KEY\n");
 
     //////////////////////
     //////////////////////
@@ -254,6 +260,7 @@ int main(int argc, char *argv[]) {
     //////////////////////
     //////////////////////
 
+    // printf("SENDING SIZE...\n");
     // prepare to send size of string
     // https://www.geeksforgeeks.org/what-is-the-best-way-in-c-to-convert-a-number-to-a-string/
     memset(buffer, '\0', sizeof(buffer));
@@ -269,12 +276,15 @@ int main(int argc, char *argv[]) {
         printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
 
+    // printf("SENT SIZE\n");
 
     //////////////////////
     //////////////////////
     //  SENDING DATA   
     //////////////////////
     //////////////////////
+
+    // printf("SENDING DATA...\n");
     int completeMessageLen = strlen(completeMessage);
 
     charsWritten = 0;
@@ -300,9 +310,10 @@ int main(int argc, char *argv[]) {
         
     }
 
+    
 
     // printf("CLIENT SENT: %lu\n", charsWritten);
-
+    // printf("SENT DATA\n");
 
     //////////////////////
     //////////////////////
@@ -312,14 +323,16 @@ int main(int argc, char *argv[]) {
 
     // Get return message from server
     // Clear out the buffer again for reuse
-    memset(decodedtext, '\0', sizeof(decodedtext));
+    // printf("RECIEVING DECODED DATA...\n");
+    
+    memset(decodedText, '\0', sizeof(decodedText));
     charsRead = 0;
     int temp = 0;
 
     do{
         memset(buffer, '\0', sizeof(buffer));
-        temp = recv(socketFD, buffer, sizeof(buffer), 0);
-        strcat(decodedtext, buffer);
+        temp = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
+        strcat(decodedText, buffer);
 
         if (temp == -1){ 
             break;
@@ -330,13 +343,19 @@ int main(int argc, char *argv[]) {
         }
 
         charsRead += temp;
-    } while(charsRead < completeMessageLen);
+    }while(charsRead < completeMessageLen);
    
 
-    printf("%s\n", decodedtext);
+    // printf("RECIEVED ENCRYPTED DATA\n");
+    // fflush(stdout);
+
+    printf("%s\n", decodedText);
 
     // Close the socket
     close(socketFD); 
+
+    
+
     return 0;
 }
 

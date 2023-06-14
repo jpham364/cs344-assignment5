@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
     int connectionSocket, charsRead;
     char buffer[1000];
 
-    char decodedtext[500000];
+    char decodedText[500000];
     char completeMessage[500000];
     char cipherChar[250000];
     char keyChar[250000];
@@ -115,6 +115,7 @@ int main(int argc, char *argv[]){
 
                 }
 
+                // printf("CHECKED CLIENT\n");
                 ////////////////////
                 ////////////////////
                 //  RECEIVING SIZE        
@@ -132,21 +133,26 @@ int main(int argc, char *argv[]){
                 int numCharsClient = atoi(buffer);
                 printf("SERVER: %d\n", numCharsClient);
 
-
+                // printf("RECIEVED SIZE\n");
                 //////////////////////
                 //////////////////////
                 //  RECEIVING DATA        
                 //////////////////////
                 //////////////////////
 
+                printf("RECIEVING DATA...\n");
                 memset(completeMessage, '\0', sizeof(completeMessage));
                 charsRead = 0;
                 int temp = 0;
-                while(charsRead < numCharsClient){
-                    memset(buffer, '\0', sizeof(buffer)); // clear buffer
-                    temp = recv(connectionSocket, buffer, sizeof(buffer) - 1, 0);
-                    strcat(completeMessage, buffer);
 
+                do{
+                    memset(buffer, '\0', sizeof(buffer)); // clear buffer
+                    temp = recv(connectionSocket, buffer, sizeof(buffer) -1, 0);
+
+                    // if(buffer[temp] == '\0'){
+                    //     printf("null terminated buffer!\n");
+                    // }
+                    
                     if (temp == -1){
                         printf("temp == -1\n");
                         break;
@@ -155,13 +161,22 @@ int main(int argc, char *argv[]){
                         printf("temp == 0\n");
                         break;
                     }
+
+                    // strcat(completeMessage, buffer);
+                    sprintf(completeMessage, "%s%s", completeMessage, buffer);
                 
                     charsRead += temp;
                     
-                }      
+                }while(charsRead < numCharsClient);
 
-                printf("SERVER READ: %d\n", charsRead);
-                printf("%s\n", completeMessage);
+                // int x = 0;
+                // printf("CHAR INT\n");
+                // for (x = 0; x < 2600; x++)
+                // printf(" %c %d", completeMessage[x], completeMessage[x]);
+
+                // printf("SERVER READ: %d\n", charsRead);
+                // printf("%s\n", completeMessage);
+                printf("RECEIVED DATA\n");
 
                 //////////////////////
                 //////////////////////
@@ -178,16 +193,57 @@ int main(int argc, char *argv[]){
                 memset(cipherChar, '\0', sizeof(cipherChar));
                 strcpy(cipherChar, token);
 
-                printf("cipherChar: %s\n", cipherChar);
+                // printf("ptChar: %s\n", ptChar);
 
                 // Then get Token
                 token = strtok_r(NULL, "\0", &saveptr);
                 memset(keyChar, '\0', sizeof(keyChar));
                 strcpy(keyChar, token);
 
-                printf("keyChar: %s\n", keyChar);
+                // printf("keyChar: %s\n", keyChar);
 
+                printf("SEPARATED DATA\n");
                 // //////////////////////
+                // //////////////////////
+                // //  ENCRYPT         
+                // //////////////////////
+                // //////////////////////
+                // int i;
+                // char ptInt;
+                // char keyInt;
+                // char cipherInt; 
+                // memset(ciphertext, '\0', sizeof(ciphertext));
+                // for (i = 0; i < strlen(ptChar); i++){
+
+                //     if(ptChar[i] == 32){
+                //         ptInt = 26;
+                //     }
+                //     else{
+                //         ptInt = ptChar[i] - 65;
+                //     }
+
+                //     if(keyChar[i] == 32){
+                //         keyInt = 26;
+                //     }
+                //     else{
+                //         keyInt = keyChar[i] - 65;
+                //     }
+                    
+
+                //     cipherInt = (ptInt + keyInt) % 27;
+                //     // https://www.educative.io/blog/concatenate-string-c
+                //     // Concatenate using sprintf
+
+                //     if(cipherInt == 26){
+                //         sprintf(ciphertext, "%s%c", ciphertext, cipherInt);
+                //     }
+                //     else{
+                //         sprintf(ciphertext, "%s%c", ciphertext,(cipherInt + 65));
+                //     }
+
+
+                // }
+
                 // //////////////////////
                 // //  DECODE         
                 // //////////////////////
@@ -196,14 +252,16 @@ int main(int argc, char *argv[]){
                 char cipherInt;
                 char keyInt;
                 int decodedInt; 
-                memset(decodedtext, '\0', sizeof(decodedtext));
+                memset(decodedText, '\0', sizeof(decodedText));
 
 
                 for (i = 0; i < strlen(cipherChar); i++){
 
+                    
                     if(cipherChar[i] == 32){
                         cipherInt = 26;
                     }
+
                     else{
                         cipherInt = cipherChar[i] - 65;
                     }
@@ -211,6 +269,7 @@ int main(int argc, char *argv[]){
                     if(keyChar[i] == 32){
                         keyInt = 26;
                     }
+
                     else{
                         keyInt = keyChar[i] - 65;
                     }
@@ -226,36 +285,32 @@ int main(int argc, char *argv[]){
                         decodedInt = decodedInt % 27;
                     }
 
-                   
-                    // https://www.educative.io/blog/concatenate-string-c
-                    // Concatenate using sprintf
-                    // printf("%d\n", decodedInt);
-                    // printf("Test: %d\n", testMod);
 
                     if(decodedInt == 26){
-                        sprintf(decodedtext, "%s%c", decodedtext, decodedInt);
+                        sprintf(decodedText, "%s%c", decodedText, ' ');
                     }
                     else{
-                        sprintf(decodedtext, "%s%c", decodedtext, (decodedInt + 65));
+                        sprintf(decodedText, "%s%c", decodedText, (decodedInt + 65));
                     }
-
-
                 }
 
-                printf("%s\n", decodedtext);
+                printf("");
 
+                printf("DECODED DATA\n");
                 // //////////////////////
                 // //////////////////////
-                // //  SEND BACK DECODED DATA         
+                // //  SEND BACK ENCRYPTED DATA         
                 // //////////////////////
                 // //////////////////////
+
+                printf("SENDING DECODED DATA...\n");
                 memset(buffer, '\0', sizeof(buffer));
                 int charsWritten = 0;
                 int charsSent = 0;
 
                 while(charsWritten < numCharsClient){
 
-                    charsSent = send(connectionSocket, decodedtext + charsWritten, 1000, 0);
+                    charsSent = send(connectionSocket, decodedText + charsWritten, 1000, 0);
                     charsWritten = charsWritten + charsSent;
                 }
 
@@ -267,7 +322,7 @@ int main(int argc, char *argv[]){
                     printf("CLIENT: WARNING: Not all data written to socket!\n");
                 }
 
-
+                printf("SENT BACK DECODED DATA\n");
 
                 close(connectionSocket); 
                 break;
