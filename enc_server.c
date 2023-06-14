@@ -122,16 +122,16 @@ int main(int argc, char *argv[]){
                 ////////////////////
                 ////////////////////
                 // Get the message from the client and display it
-                memset(buffer, '\0', 1000);
-                // Read the client's message from the socket
-                charsRead = recv(connectionSocket, buffer, 999, 0); 
-                if (charsRead < 0){
-                    error("ERROR reading from socket");
-                }
+                // memset(buffer, '\0', 1000);
+                // // Read the client's message from the socket
+                // charsRead = recv(connectionSocket, buffer, 999, 0); 
+                // if (charsRead < 0){
+                //     error("ERROR reading from socket");
+                // }
                 
 
-                int numCharsClient = (atoi(buffer) + 1);
-                printf("SERVER: %d\n", numCharsClient);
+                // int numCharsClient = (atoi(buffer) + 1);
+                // printf("SERVER: %d\n", numCharsClient);
 
                 // printf("RECIEVED SIZE\n");
                 //////////////////////
@@ -145,28 +145,48 @@ int main(int argc, char *argv[]){
                 charsRead = 0;
                 int temp = 0;
 
-                do{
-                    memset(buffer, '\0', sizeof(buffer)); // clear buffer
-                    temp = recv(connectionSocket, buffer, sizeof(buffer) -1, 0);
-
-                    // if(buffer[temp] == '\0'){
-                    //     // printf("null terminated buffer!\n");
-                    // }
-                    // strcat(completeMessage, buffer);
+                while(strstr(completeMessage, "@@") == NULL){
+                    memset(buffer, '\0', sizeof(buffer));
+                    charsRead = recv(connectionSocket, buffer, sizeof(buffer)-1 , 0);
+                    strcat(completeMessage, buffer);
                     
-                    if (temp == -1){
-                        printf("temp == -1\n");
+                    if (charsRead == -1){
+                        printf("r == -1\n");
                         break;
                     }
-                    if (temp == 0){
-                    //     printf("temp == 0\n");
+                    if (charsRead == 0){
+                        printf("r == 0\n");
                         break;
                     }
+                }
 
-                    sprintf(completeMessage, "%s%s", completeMessage, buffer);
-                    charsRead += temp;
+                int terminalLocation = strstr(completeMessage, "@@") - completeMessage;
+                completeMessage[terminalLocation] = '\0';
+                // printf("Complete String: %s\n", completeMessage);
+                printf("RECEIVED DATA\n");
+
+                // do{
+                //     memset(buffer, '\0', sizeof(buffer)); // clear buffer
+                //     temp = recv(connectionSocket, buffer, sizeof(buffer) -1, 0);
+
+                //     // if(buffer[temp] == '\0'){
+                //     //     // printf("null terminated buffer!\n");
+                //     // }
+                //     // strcat(completeMessage, buffer);
                     
-                }while(charsRead < numCharsClient);
+                //     if (temp == -1){
+                //         printf("temp == -1\n");
+                //         break;
+                //     }
+                //     if (temp == 0){
+                //     //     printf("temp == 0\n");
+                //         break;
+                //     }
+
+                //     sprintf(completeMessage, "%s%s", completeMessage, buffer);
+                //     charsRead += temp;
+                    
+                // }while(charsRead < numCharsClient);
 
                 // int x = 0;
                 // printf("CHAR INT\n");
@@ -175,13 +195,13 @@ int main(int argc, char *argv[]){
 
                 // printf("SERVER READ: %d\n", charsRead);
                 // printf("%s\n", completeMessage);
-                printf("RECEIVED DATA\n");
+              
 
-                //////////////////////
-                //////////////////////
+                ////////////////////
+                ////////////////////
                 //  SEPARATE DATA        
-                //////////////////////
-                //////////////////////
+                ////////////////////
+                ////////////////////
 
                 char *token;
                 char *saveptr;
@@ -244,6 +264,9 @@ int main(int argc, char *argv[]){
                 }
 
                 printf("ENCRYPTED DATA\n");
+
+                strcat(ciphertext, "@@");
+                // printf("Complete ciphertext: %s\n", ciphertext);
                 // //////////////////////
                 // //////////////////////
                 // //  SEND BACK ENCRYPTED DATA         
@@ -255,15 +278,16 @@ int main(int argc, char *argv[]){
                 int charsWritten = 0;
                 int charsSent = 0;
 
-                while(charsWritten < numCharsClient){
+                while(charsWritten < strlen(ciphertext)){
 
                     charsSent = send(connectionSocket, ciphertext + charsWritten, 1000, 0);
                     charsWritten = charsWritten + charsSent;
+
+                    if (charsWritten < 0){
+                        error("CLIENT: ERROR writing to socket");
+                    }
                 }
 
-                if (charsWritten < 0){
-                    error("CLIENT: ERROR writing to socket");
-                }
 
                 if (charsWritten <= strlen(buffer)){
                     printf("CLIENT: WARNING: Not all data written to socket!\n");

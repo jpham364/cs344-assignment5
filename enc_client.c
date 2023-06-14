@@ -247,35 +247,7 @@ int main(int argc, char *argv[]) {
     strcat(completeMessage, ptChar);
     strcat(completeMessage, "-");
     strcat(completeMessage,keyChar);
-
-    // printf("Concat: ");
-    // printf("%s\n", completeMessage);
-
-    // printf("CONCATENATED PT AND KEY\n");
-
-    //////////////////////
-    //////////////////////
-    //  SENDING SIZE        
-    //////////////////////
-    //////////////////////
-
-    // printf("SENDING SIZE...\n");
-    // prepare to send size of string
-    // https://www.geeksforgeeks.org/what-is-the-best-way-in-c-to-convert-a-number-to-a-string/
-    memset(buffer, '\0', sizeof(buffer));
-    sprintf(buffer, "%d", strlen(completeMessage));
-
-    charsWritten = send(socketFD, buffer, strlen(buffer), 0); 
-
-    if (charsWritten < 0){
-        error("CLIENT: ERROR writing to socket");
-    }
-
-    if (charsWritten < strlen(buffer)){
-        printf("CLIENT: WARNING: Not all data written to socket!\n");
-    }
-
-    // printf("SENT SIZE\n");
+    strcat(completeMessage, "@@");
 
     //////////////////////
     //////////////////////
@@ -319,45 +291,41 @@ int main(int argc, char *argv[]) {
 
     
 
-    // printf("CLIENT SENT: %lu\n", charsWritten);
+    // // printf("CLIENT SENT: %lu\n", charsWritten);
     // printf("SENT DATA\n");
 
-    //////////////////////
-    //////////////////////
-    //  RECEIVE ENCRYPTED DATA         
-    //////////////////////
-    //////////////////////
+    // //////////////////////
+    // //////////////////////
+    // //  RECEIVE ENCRYPTED DATA         
+    // //////////////////////
+    // //////////////////////
 
-    // Get return message from server
-    // Clear out the buffer again for reuse
-    // printf("RECIEVING ENCRYPTED DATA...\n");
+    // // Get return message from server
+    // // Clear out the buffer again for reuse
+    // // printf("RECIEVING ENCRYPTED DATA...\n");
     
     memset(ciphertext, '\0', sizeof(ciphertext));
     charsRead = 0;
-    int temp = 0;
 
-    do{
+    while(strstr(ciphertext, "@@") == NULL){
+
         memset(buffer, '\0', sizeof(buffer));
-        temp = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
+        charsRead = recv(socketFD, buffer, sizeof(buffer)-1, 0);
         strcat(ciphertext, buffer);
-
-        if (temp == -1){ 
+        if(charsRead == -1){
+            break;
+        }
+        if(charsRead == 0){
             break;
         }
 
-        if (temp == 0){
-            break;
-        }
+    }
 
-        charsRead += temp;
-    }while(charsRead < completeMessageLen);
-   
-
-    // printf("RECIEVED ENCRYPTED DATA\n");
-   
-
+    int terminalLocation = strstr(ciphertext, "@@") - ciphertext;
+    ciphertext[terminalLocation] = '\0';
     printf("%s\n", ciphertext);
     fflush(stdout);
+    
 
     // Close the socket
     close(socketFD); 
