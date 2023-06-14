@@ -44,9 +44,8 @@ int main(int argc, char *argv[]) {
     struct sockaddr_in serverAddress;
     char buffer[1000];
 
-    char decodedText[500000];
+    char decodedtext[500000];
     char completeMessage[500000];
-
     char cipherChar[250000];
     char keyChar[250000];
 
@@ -69,22 +68,22 @@ int main(int argc, char *argv[]) {
     // 2.4 Lecture: File Access in C
     
     // This is for the plaintext file
-    FILE *ciphertext;
-    ciphertext = fopen(argv[1], "r");
+    FILE *plaintext;
+    plaintext = fopen(argv[1], "r");
     
-    if(ciphertext == NULL){
+    if(plaintext == NULL){
         fprintf(stderr,"ERROR: Cannot open file\n"); 
         exit(1); 
     }
 
     // This will automatically allocate by getline() using malloc() (found in 2.4 slides)
-    char* cipherContents = NULL;
+    char* ptContents = NULL;
     size_t GETbufferSize = 0;
     
-    getline(&cipherContents, &GETbufferSize, ciphertext);
+    getline(&ptContents, &GETbufferSize, plaintext);
    
 
-    int cipherLen = strlen(cipherContents);
+    int ptLen = strlen(ptContents);
     // printf("Length of PT: %d\n", ptLen);
 
     // This is for the key file
@@ -102,12 +101,12 @@ int main(int argc, char *argv[]) {
     int keyLen = strlen(keyContents);
     // printf("Length of Key: %d\n", keyLen);
 
-    if (keyLen < cipherLen){
-        fprintf(stderr, "ERROR: Key (%d) is shorter than plaintext(%d) \n", keyLen, cipherLen); 
+    if (keyLen < ptLen){
+        fprintf(stderr, "ERROR: Key (%d) is shorter than plaintext(%d) \n", keyLen, ptLen); 
         exit(1);
     }
     
- 
+    // printf("CHECKED KEY < PT\n");
 
     //////////////////////
     //////////////////////
@@ -115,12 +114,12 @@ int main(int argc, char *argv[]) {
     //////////////////////
     //////////////////////
 
-    ciphertext = fopen(argv[1], "r");
+    plaintext = fopen(argv[1], "r");
 
     char cipherCharCheck;
 
     do{
-        cipherCharCheck = fgetc(ciphertext);
+        cipherCharCheck = fgetc(plaintext);
 
         if(cipherCharCheck == 32){
             continue;
@@ -226,14 +225,14 @@ int main(int argc, char *argv[]) {
 
     // First set up PT
     memset(cipherChar, '\0', sizeof(cipherChar));
-    ciphertext = fopen(argv[1], "r");
+    plaintext = fopen(argv[1], "r");
 
-    fgets(cipherChar, sizeof(cipherChar), ciphertext);
+    fgets(cipherChar, sizeof(cipherChar), plaintext);
 
     // Remove the trailing \n that fgets adds
     cipherChar[strcspn(cipherChar, "\n")] = '\0'; 
     
-    // printf("String: %s\n", ptChar);
+    // printf("String: %s\n", cipherChar);
 
     // Then, set up Key
     memset(keyChar, '\0', sizeof(keyChar));
@@ -248,35 +247,7 @@ int main(int argc, char *argv[]) {
     strcat(completeMessage, cipherChar);
     strcat(completeMessage, "-");
     strcat(completeMessage,keyChar);
-
-    // printf("Concat: ");
-    // printf("%s\n", completeMessage);
-
-    // printf("CONCATENATED PT AND KEY\n");
-
-    //////////////////////
-    //////////////////////
-    //  SENDING SIZE        
-    //////////////////////
-    //////////////////////
-
-    // printf("SENDING SIZE...\n");
-    // prepare to send size of string
-    // https://www.geeksforgeeks.org/what-is-the-best-way-in-c-to-convert-a-number-to-a-string/
-    memset(buffer, '\0', sizeof(buffer));
-    sprintf(buffer, "%d", strlen(completeMessage));
-
-    charsWritten = send(socketFD, buffer, strlen(buffer), 0); 
-
-    if (charsWritten < 0){
-        error("CLIENT: ERROR writing to socket");
-    }
-
-    if (charsWritten < strlen(buffer)){
-        printf("CLIENT: WARNING: Not all data written to socket!\n");
-    }
-
-    // printf("SENT SIZE\n");
+    strcat(completeMessage, "@@");
 
     //////////////////////
     //////////////////////
@@ -294,62 +265,67 @@ int main(int argc, char *argv[]) {
     // https://beej.us/guide/bgnet/html/#setsockoptman
     while(charsWritten < completeMessageLen){
 
-        charsSent = send(socketFD, completeMessage + charsWritten, 1000, 0);
-        charsWritten = charsWritten + charsSent;
+        int theBuffer = sizeof(buffer);
 
-        if (charsWritten == 0){
-            break;
-        }
-        if (charsWritten == -1){
-            break;
+        if((completeMessageLen - charsWritten) < 1000){
+            theBuffer = (completeMessageLen - charsWritten) + 1;
         }
 
-        if (charsWritten <= strlen(buffer)){
-        printf("CLIENT: WARNING: Not all data written to socket!\n");
-        }
+        charsSent = send(socketFD, completeMessage + charsWritten, theBuffer, 0);
         
+
+        if (charsSent == 0){
+            break;
+        }
+        if (charsSent == -1){
+            break;
+        }
+
+        
+        charsWritten = charsWritten + charsSent;
+    }
+
+    if (charsWritten <= strlen(buffer)){
+        printf("CLIENT: WARNING: Not all data written to socket!\n");
     }
 
     
 
-    // printf("CLIENT SENT: %lu\n", charsWritten);
+    // // printf("CLIENT SENT: %lu\n", charsWritten);
     // printf("SENT DATA\n");
 
-    //////////////////////
-    //////////////////////
-    //  RECEIVE DECODED DATA         
-    //////////////////////
-    //////////////////////
+    // //////////////////////
+    // //////////////////////
+    // //  RECEIVE ENCRYPTED DATA         
+    // //////////////////////
+    // //////////////////////
 
-    // Get return message from server
-    // Clear out the buffer again for reuse
-    // printf("RECIEVING DECODED DATA...\n");
+    // // Get return message from server
+    // // Clear out the buffer again for reuse
+    // // printf("RECIEVING ENCRYPTED DATA...\n");
     
-    memset(decodedText, '\0', sizeof(decodedText));
+    memset(decodedtext, '\0', sizeof(decodedtext));
     charsRead = 0;
-    int temp = 0;
 
-    do{
+    while(strstr(decodedtext, "@@") == NULL){
+
         memset(buffer, '\0', sizeof(buffer));
-        temp = recv(socketFD, buffer, sizeof(buffer) - 1, 0);
-        strcat(decodedText, buffer);
-
-        if (temp == -1){ 
+        charsRead = recv(socketFD, buffer, sizeof(buffer)-1, 0);
+        strcat(decodedtext, buffer);
+        if(charsRead == -1){
+            break;
+        }
+        if(charsRead == 0){
             break;
         }
 
-        if (temp == 0){
-            break;
-        }
+    }
 
-        charsRead += temp;
-    }while(charsRead < completeMessageLen);
-   
-
-    // printf("RECIEVED ENCRYPTED DATA\n");
-    // fflush(stdout);
-
-    printf("%s\n", decodedText);
+    int terminalLocation = strstr(decodedtext, "@@") - decodedtext;
+    decodedtext[terminalLocation] = '\0';
+    printf("%s\n", decodedtext);
+    fflush(stdout);
+    
 
     // Close the socket
     close(socketFD); 
@@ -358,11 +334,6 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-
-
-
-
 
 
 

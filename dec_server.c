@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
     int connectionSocket, charsRead;
     char buffer[1000];
 
-    char decodedText[500000];
+    char decodedtext[500000];
     char completeMessage[500000];
     char cipherChar[250000];
     char keyChar[250000];
@@ -122,16 +122,16 @@ int main(int argc, char *argv[]){
                 ////////////////////
                 ////////////////////
                 // Get the message from the client and display it
-                memset(buffer, '\0', 1000);
-                // Read the client's message from the socket
-                charsRead = recv(connectionSocket, buffer, 999, 0); 
-                if (charsRead < 0){
-                    error("ERROR reading from socket");
-                }
+                // memset(buffer, '\0', 1000);
+                // // Read the client's message from the socket
+                // charsRead = recv(connectionSocket, buffer, 999, 0); 
+                // if (charsRead < 0){
+                //     error("ERROR reading from socket");
+                // }
                 
 
-                int numCharsClient = atoi(buffer);
-                printf("SERVER: %d\n", numCharsClient);
+                // int numCharsClient = (atoi(buffer) + 1);
+                // printf("SERVER: %d\n", numCharsClient);
 
                 // printf("RECIEVED SIZE\n");
                 //////////////////////
@@ -145,29 +145,48 @@ int main(int argc, char *argv[]){
                 charsRead = 0;
                 int temp = 0;
 
-                do{
-                    memset(buffer, '\0', sizeof(buffer)); // clear buffer
-                    temp = recv(connectionSocket, buffer, sizeof(buffer) -1, 0);
-
-                    // if(buffer[temp] == '\0'){
-                    //     printf("null terminated buffer!\n");
-                    // }
+                while(strstr(completeMessage, "@@") == NULL){
+                    memset(buffer, '\0', sizeof(buffer));
+                    charsRead = recv(connectionSocket, buffer, sizeof(buffer)-1 , 0);
+                    strcat(completeMessage, buffer);
                     
-                    if (temp == -1){
-                        printf("temp == -1\n");
+                    if (charsRead == -1){
+                        printf("r == -1\n");
                         break;
                     }
-                    if (temp == 0){
-                        printf("temp == 0\n");
+                    if (charsRead == 0){
+                        printf("r == 0\n");
                         break;
                     }
+                }
 
-                    // strcat(completeMessage, buffer);
-                    sprintf(completeMessage, "%s%s", completeMessage, buffer);
-                
-                    charsRead += temp;
+                int terminalLocation = strstr(completeMessage, "@@") - completeMessage;
+                completeMessage[terminalLocation] = '\0';
+                // printf("Complete String: %s\n", completeMessage);
+                printf("RECEIVED DATA\n");
+
+                // do{
+                //     memset(buffer, '\0', sizeof(buffer)); // clear buffer
+                //     temp = recv(connectionSocket, buffer, sizeof(buffer) -1, 0);
+
+                //     // if(buffer[temp] == '\0'){
+                //     //     // printf("null terminated buffer!\n");
+                //     // }
+                //     // strcat(completeMessage, buffer);
                     
-                }while(charsRead < numCharsClient);
+                //     if (temp == -1){
+                //         printf("temp == -1\n");
+                //         break;
+                //     }
+                //     if (temp == 0){
+                //     //     printf("temp == 0\n");
+                //         break;
+                //     }
+
+                //     sprintf(completeMessage, "%s%s", completeMessage, buffer);
+                //     charsRead += temp;
+                    
+                // }while(charsRead < numCharsClient);
 
                 // int x = 0;
                 // printf("CHAR INT\n");
@@ -176,13 +195,13 @@ int main(int argc, char *argv[]){
 
                 // printf("SERVER READ: %d\n", charsRead);
                 // printf("%s\n", completeMessage);
-                printf("RECEIVED DATA\n");
+              
 
-                //////////////////////
-                //////////////////////
+                ////////////////////
+                ////////////////////
                 //  SEPARATE DATA        
-                //////////////////////
-                //////////////////////
+                ////////////////////
+                ////////////////////
 
                 char *token;
                 char *saveptr;
@@ -193,7 +212,7 @@ int main(int argc, char *argv[]){
                 memset(cipherChar, '\0', sizeof(cipherChar));
                 strcpy(cipherChar, token);
 
-                // printf("ptChar: %s\n", ptChar);
+                // printf("cipherChar: %s\n", cipherChar);
 
                 // Then get Token
                 token = strtok_r(NULL, "\0", &saveptr);
@@ -212,14 +231,14 @@ int main(int argc, char *argv[]){
                 // char ptInt;
                 // char keyInt;
                 // char cipherInt; 
-                // memset(ciphertext, '\0', sizeof(ciphertext));
-                // for (i = 0; i < strlen(ptChar); i++){
+                // memset(decodedtext, '\0', sizeof(decodedtext));
+                // for (i = 0; i < strlen(cipherChar); i++){
 
-                //     if(ptChar[i] == 32){
+                //     if(cipherChar[i] == 32){
                 //         ptInt = 26;
                 //     }
                 //     else{
-                //         ptInt = ptChar[i] - 65;
+                //         ptInt = cipherChar[i] - 65;
                 //     }
 
                 //     if(keyChar[i] == 32){
@@ -235,14 +254,16 @@ int main(int argc, char *argv[]){
                 //     // Concatenate using sprintf
 
                 //     if(cipherInt == 26){
-                //         sprintf(ciphertext, "%s%c", ciphertext, cipherInt);
+                //         sprintf(decodedtext, "%s%c", decodedtext, ' ');
                 //     }
                 //     else{
-                //         sprintf(ciphertext, "%s%c", ciphertext,(cipherInt + 65));
+                //         sprintf(decodedtext, "%s%c", decodedtext,(cipherInt + 65));
                 //     }
 
 
                 // }
+
+                // printf("ENCRYPTED DATA\n");
 
                 // //////////////////////
                 // //  DECODE         
@@ -252,16 +273,14 @@ int main(int argc, char *argv[]){
                 char cipherInt;
                 char keyInt;
                 int decodedInt; 
-                memset(decodedText, '\0', sizeof(decodedText));
+                memset(decodedtext, '\0', sizeof(decodedtext));
 
 
                 for (i = 0; i < strlen(cipherChar); i++){
 
-                    
                     if(cipherChar[i] == 32){
                         cipherInt = 26;
                     }
-
                     else{
                         cipherInt = cipherChar[i] - 65;
                     }
@@ -269,7 +288,6 @@ int main(int argc, char *argv[]){
                     if(keyChar[i] == 32){
                         keyInt = 26;
                     }
-
                     else{
                         keyInt = keyChar[i] - 65;
                     }
@@ -285,44 +303,44 @@ int main(int argc, char *argv[]){
                         decodedInt = decodedInt % 27;
                     }
 
-
                     if(decodedInt == 26){
-                        sprintf(decodedText, "%s%c", decodedText, ' ');
+                        sprintf(decodedtext, "%s%c", decodedtext, ' ');
                     }
                     else{
-                        sprintf(decodedText, "%s%c", decodedText, (decodedInt + 65));
+                        sprintf(decodedtext, "%s%c", decodedtext,(decodedInt + 65));
                     }
+
                 }
 
-                printf("");
-
-                printf("DECODED DATA\n");
+                strcat(decodedtext, "@@");
+                // printf("Complete decodedtext: %s\n", decodedtext);
                 // //////////////////////
                 // //////////////////////
                 // //  SEND BACK ENCRYPTED DATA         
                 // //////////////////////
                 // //////////////////////
 
-                printf("SENDING DECODED DATA...\n");
+                printf("SENDING ENCRYPTED DATA...\n");
                 memset(buffer, '\0', sizeof(buffer));
                 int charsWritten = 0;
                 int charsSent = 0;
 
-                while(charsWritten < numCharsClient){
+                while(charsWritten < strlen(decodedtext)){
 
-                    charsSent = send(connectionSocket, decodedText + charsWritten, 1000, 0);
+                    charsSent = send(connectionSocket, decodedtext + charsWritten, 1000, 0);
                     charsWritten = charsWritten + charsSent;
+
+                    if (charsWritten < 0){
+                        error("CLIENT: ERROR writing to socket");
+                    }
                 }
 
-                if (charsWritten < 0){
-                    error("CLIENT: ERROR writing to socket");
-                }
 
                 if (charsWritten <= strlen(buffer)){
                     printf("CLIENT: WARNING: Not all data written to socket!\n");
                 }
 
-                printf("SENT BACK DECODED DATA\n");
+                printf("SENT BACK ENCRYPTED DATA\n");
 
                 close(connectionSocket); 
                 break;
